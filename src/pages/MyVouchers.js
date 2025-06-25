@@ -56,6 +56,8 @@ function MyVouchers() {
           }}>
             <div style={{ fontSize: 16, fontWeight: 600 }}>{voucher.value}</div>
             <div style={{ fontSize: 13 }}>{voucher.description}</div>
+            <div style={{ fontSize: 13, marginTop: 6 }}><b>Spin Prize:</b> {voucher.prize || 'Not spun yet'}</div>
+            <div style={{ fontSize: 13, marginTop: 2 }}><b>Status:</b> {voucher.status === 'Issued' ? 'Issued' : voucher.status === 'Void' ? 'Voided' : 'Pending'}</div>
           </div>
         ))
       )}

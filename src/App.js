@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-route
 import GrabVoucher from "./pages/GrabVoucher";
 import MyVouchers from "./pages/MyVouchers";
 import Referral from "./pages/Referral";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const cardData = [
   {
@@ -73,15 +74,8 @@ function HomeCards() {
   const wheelSize = typeof window !== 'undefined' ? Math.min(window.innerWidth, 240) - 32 : 120;
 
   const handleSpinClick = () => {
-    // Calculate which segment the pointer will land on based on rotation
     const segments = wheelData.length;
-    const segmentAngle = 360 / segments;
     const newPrizeNumber = Math.floor(Math.random() * segments);
-    
-    // Since pointer is at bottom, we need to adjust the calculation
-    // The segment at the bottom (6 o'clock position) should be the result
-    const adjustedPrizeNumber = (segments - newPrizeNumber) % segments;
-    
     setPrizeNumber(newPrizeNumber);
     setMustSpin(true);
     setPrize(null);
@@ -177,35 +171,22 @@ function HomeCards() {
                   backgroundColors={backgroundColors}
                   textColors={["#333"]}
                   fontSize={12}
-                  width={40}
-                  height={40}
+                  width={wheelSize}
+                  height={wheelSize}
                   outerBorderWidth={0}
                   innerBorderWidth={0}
                   segmentBorderWidth={0}
                   outerBorderColor="#eee"
                   innerBorderColor="#eee"
                   segmentBorderColor="#eee"
-                  pointerLocation="bottom"
-                  pointerProps={{
-                    style: {
-                      top: '95%',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: 0,
-                      height: 0,
-                      borderLeft: '15px solid transparent',
-                      borderRight: '15px solid transparent',
-                      borderBottom: '50px solid #1890ff',
-                      backgroundColor: 'transparent',
-                    }
-                  }}
+                  pointerLocation="top"
+                  pointerStyle={{ display: 'none' }}
+                  showPointer={false}
                   spinDuration={0.9}
                   spins={300}
                   onStopSpinning={() => {
                     setMustSpin(false);
-                    const segments = wheelData.length;
-                    const winningSegment = (prizeNumber + Math.ceil(segments / 2)) % segments;
-                    setPrize(wheelData[winningSegment].option);
+                    setPrize(wheelData[prizeNumber].option);
                   }}
                 />
               </div>
@@ -221,6 +202,27 @@ function HomeCards() {
                   }}
                 >
                   You won: <span>{prize}</span>
+                  <div style={{ marginTop: 20 }}>
+                    <button
+                      style={{
+                        padding: "10px 24px",
+                        background: "#1890ff",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 8,
+                        fontWeight: 600,
+                        fontSize: 16,
+                        cursor: "pointer",
+                        marginTop: 10,
+                      }}
+                      onClick={() => {
+                        localStorage.setItem('spinPrize', prize);
+                        navigate('/grab');
+                      }}
+                    >
+                      Collect
+                    </button>
+                  </div>
                 </div>
               )}
               <div style={{ textAlign: "center", marginTop: 55 }}>
@@ -273,15 +275,8 @@ function App() {
   const [prize, setPrize] = useState(null);
 
   const handleSpinClick = () => {
-    // Calculate which segment the pointer will land on based on rotation
     const segments = wheelData.length;
-    const segmentAngle = 360 / segments;
     const newPrizeNumber = Math.floor(Math.random() * segments);
-    
-    // Since pointer is at bottom, we need to adjust the calculation
-    // The segment at the bottom (6 o'clock position) should be the result
-    const adjustedPrizeNumber = (segments - newPrizeNumber) % segments;
-    
     setPrizeNumber(newPrizeNumber);
     setMustSpin(true);
     setPrize(null);
@@ -298,6 +293,7 @@ function App() {
         <Route path="/grab" element={<GrabVoucher />} />
         <Route path="/my-vouchers" element={<MyVouchers />} />
         <Route path="/referral" element={<Referral />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/" element={<HomeCards />} />
       </Routes>
     </Router>

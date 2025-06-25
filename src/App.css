@@ -71,3 +71,7 @@
 .spin-style:hover {
   background: #176ddb !important;
 }
+
+.wheel-pointer, .wheel-pointer-svg, .pointer, .default-pointer, svg[viewBox="0 0 100 100"] > polygon, svg[viewBox="0 0 100 100"] > path {
+  display: none !important;
+}
