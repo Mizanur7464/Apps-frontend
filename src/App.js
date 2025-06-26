@@ -295,24 +295,6 @@ function HomeCards() {
 }
 
 function App() {
-  const [showWheel, setShowWheel] = useState(false);
-  const [mustSpin, setMustSpin] = useState(false);
-  const [prizeNumber, setPrizeNumber] = useState(0);
-  const [prize, setPrize] = useState(null);
-
-  const handleSpinClick = () => {
-    const segments = wheelData.length;
-    const newPrizeNumber = Math.floor(Math.random() * segments);
-    setPrizeNumber(newPrizeNumber);
-    setMustSpin(true);
-    setPrize(null);
-  };
-
-  const handleCloseWheel = () => {
-    setShowWheel(false);
-    setPrize(null);
-  };
-
   return (
     <Router>
       <Routes>
