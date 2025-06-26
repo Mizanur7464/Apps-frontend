@@ -11,7 +11,12 @@ function MyVouchers() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setVouchers(getGrabbedVouchers());
+    // ইউজারের নাম/আইডি localStorage থেকে নিন
+    const userName = localStorage.getItem('userName');
+    if (!userName) return;
+    fetch(`/api/my-vouchers?username=${encodeURIComponent(userName)}`)
+      .then(res => res.json())
+      .then(data => setVouchers(data));
   }, []);
 
   return (

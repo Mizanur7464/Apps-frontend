@@ -17,13 +17,17 @@ function AdminDashboard() {
   const [spinForm, setSpinForm] = useState([{ prize_label: '', win_chance: 0 }]);
   const [referralForm, setReferralForm] = useState({ content: '', status: 'active' });
 
+  // Referral Admin Features
+  const [referrals, setReferrals] = useState([]);
+
   useEffect(() => {
-    fetch("/api/vouchers")
+    fetch("/api/admin/vouchers")
       .then(res => res.json())
       .then(data => setVouchers(data));
     fetch(API('voucher-campaigns')).then(r => r.json()).then(setVoucherCampaigns);
     fetch(API('spin-wheel')).then(r => r.json()).then(setSpinConfigs);
-    fetch(API('referral-reward')).then(r => r.json()).then(setReferralRewards);
+    fetch('/api/admin/referrals').then(r => r.json()).then(setReferrals);
+    fetch('/api/admin/referral-reward').then(r => r.json()).then(setReferralRewards);
   }, []);
 
   const handleStatusChange = (id, newStatus) => {
@@ -71,10 +75,12 @@ function AdminDashboard() {
   };
   const handleSpinSubmit = (e) => {
     e.preventDefault();
+    // Ensure each prize has a status field
+    const prizesWithStatus = spinForm.map(prize => ({ ...prize, status: prize.status || 'active' }));
     fetch(API('spin-wheel'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prizes: spinForm })
+      body: JSON.stringify({ prizes: prizesWithStatus })
     })
       .then(r => r.json())
       .then(() => {
@@ -85,17 +91,55 @@ function AdminDashboard() {
 
   const handleReferralSubmit = (e) => {
     e.preventDefault();
-    fetch(API('referral-reward'), {
+    fetch('/api/admin/referral-reward', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(referralForm)
     })
       .then(r => r.json())
       .then(() => {
-        fetch(API('referral-reward')).then(r => r.json()).then(setReferralRewards);
+        fetch('/api/admin/referral-reward').then(r => r.json()).then(setReferralRewards);
         setReferralForm({ content: '', status: 'active' });
       });
   };
+
+  // Spin wheel prize status toggle
+  const handleSpinStatusChange = (id, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    fetch(`/api/admin/spin-wheel/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    })
+      .then(res => res.json())
+      .then(() => {
+        fetch(API('spin-wheel')).then(r => r.json()).then(setSpinConfigs);
+      });
+  };
+
+  // Add this handler for deleting a campaign
+  const handleDeleteCampaign = (id) => {
+    fetch(`/api/admin/voucher-campaigns/${id}`, {
+      method: 'DELETE',
+    })
+      .then(r => r.json())
+      .then(() => {
+        fetch(API('voucher-campaigns')).then(r => r.json()).then(setVoucherCampaigns);
+      });
+  };
+
+  // Delete referral reward
+  const handleDeleteReferralReward = (id) => {
+    fetch(`/api/admin/referral-reward/${id}`, { method: 'DELETE' })
+      .then(r => r.json())
+      .then(() => fetch('/api/admin/referral-reward').then(r => r.json()).then(setReferralRewards));
+  };
+
+  // Referral count per referrer
+  const refCount = {};
+  referrals.forEach(r => {
+    refCount[r.referrer] = (refCount[r.referrer] || 0) + 1;
+  });
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 30 }}>
@@ -138,7 +182,7 @@ function AdminDashboard() {
           ) : (
             filtered.map(v => (
               <tr key={v.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: 8 }}>{v.user || "N/A"}</td>
+                <td style={{ padding: 8 }}>{v.username || "N/A"}</td>
                 <td>{v.value}</td>
                 <td>{v.prize || "-"}</td>
                 <td style={{ fontWeight: 600, color: v.status === "Issued" ? "#388e3c" : v.status === "Void" ? "#d32f2f" : "#faad14" }}>
@@ -200,7 +244,7 @@ function AdminDashboard() {
         <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa' }}>
           <thead>
             <tr>
-              <th>ID</th><th>Content</th><th>Quantity</th><th>Status</th><th>Created</th>
+              <th>ID</th><th>Content</th><th>Quantity</th><th>Status</th><th>Created</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -211,6 +255,12 @@ function AdminDashboard() {
                 <td>{vc.quantity}</td>
                 <td>{vc.status}</td>
                 <td>{vc.created_at}</td>
+                <td>
+                  <button
+                    style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                    onClick={() => handleDeleteCampaign(vc.id)}
+                  >Delete</button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -252,7 +302,7 @@ function AdminDashboard() {
         <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa' }}>
           <thead>
             <tr>
-              <th>ID</th><th>Prize</th><th>Win %</th><th>Campaign</th><th>Created</th>
+              <th>ID</th><th>Prize</th><th>Win %</th><th>Campaign</th><th>Status</th><th>Created</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -262,53 +312,110 @@ function AdminDashboard() {
                 <td>{sc.prize_label}</td>
                 <td>{sc.win_chance}</td>
                 <td>{sc.campaign_id}</td>
+                <td style={{ fontWeight: 600, color: sc.status === 'active' ? '#388e3c' : '#d32f2f' }}>{sc.status || 'active'}</td>
                 <td>{sc.created_at}</td>
+                <td>
+                  <button
+                    style={{
+                      background: sc.status === 'active' ? '#d32f2f' : '#388e3c',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '6px 12px',
+                      cursor: 'pointer',
+                      fontWeight: 600
+                    }}
+                    onClick={() => handleSpinStatusChange(sc.id, sc.status || 'active')}
+                  >
+                    {sc.status === 'active' ? 'Deactivate' : 'Activate'}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
 
-      {/* Referral Reward */}
-      <section>
-        <h2>Referral Reward</h2>
-        <form onSubmit={handleReferralSubmit} style={{ marginBottom: 16 }}>
-          <input
-            type="text"
-            placeholder="Reward Content"
-            value={referralForm.content}
-            onChange={e => setReferralForm({ ...referralForm, content: e.target.value })}
-            required
-            style={{ marginRight: 8 }}
-          />
-          <select
-            value={referralForm.status}
-            onChange={e => setReferralForm({ ...referralForm, status: e.target.value })}
-            style={{ marginRight: 8 }}
-          >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          <button type="submit">Add Reward</button>
-        </form>
-        <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa' }}>
-          <thead>
-            <tr>
-              <th>ID</th><th>Content</th><th>Status</th><th>Created</th>
+      {/* Referral Report/List */}
+      <h2>Referral Report</h2>
+      <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa', marginBottom: 24 }}>
+        <thead>
+          <tr>
+            <th>Referrer</th><th>Referred</th><th>Date</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {referrals.map(r => (
+            <tr key={r.id}>
+              <td>{r.referrer}</td>
+              <td>{r.referred}</td>
+              <td>{r.created_at}</td>
+              <td>{r.status || 'Success'}</td>
             </tr>
-          </thead>
-          <tbody>
-            {referralRewards.map(rr => (
-              <tr key={rr.id}>
-                <td>{rr.id}</td>
-                <td>{rr.content}</td>
-                <td>{rr.status}</td>
-                <td>{rr.created_at}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+          ))}
+        </tbody>
+      </table>
+      {/* Referral Count per Referrer */}
+      <h3>Top Referrers</h3>
+      <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa', marginBottom: 24 }}>
+        <thead>
+          <tr>
+            <th>Referrer</th><th>Referral Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(refCount).map(([ref, count]) => (
+            <tr key={ref}>
+              <td>{ref}</td>
+              <td>{count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {/* Referral Reward Configuration */}
+      <h2>Referral Rewards</h2>
+      <form onSubmit={handleReferralSubmit} style={{ marginBottom: 16 }}>
+        <input
+          type="text"
+          placeholder="Reward Content"
+          value={referralForm.content}
+          onChange={e => setReferralForm({ ...referralForm, content: e.target.value })}
+          required
+          style={{ marginRight: 8 }}
+        />
+        <select
+          value={referralForm.status}
+          onChange={e => setReferralForm({ ...referralForm, status: e.target.value })}
+          style={{ marginRight: 8 }}
+        >
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <button type="submit">Add Reward</button>
+      </form>
+      <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa' }}>
+        <thead>
+          <tr>
+            <th>ID</th><th>Content</th><th>Status</th><th>Created</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {referralRewards.map(rw => (
+            <tr key={rw.id}>
+              <td>{rw.id}</td>
+              <td>{rw.content}</td>
+              <td>{rw.status}</td>
+              <td>{rw.created_at}</td>
+              <td>
+                <button
+                  style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                  onClick={() => handleDeleteReferralReward(rw.id)}
+                >Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

@@ -34,17 +34,17 @@ function Referral() {
   const [topReferrers, setTopReferrers] = useState([]);
   const [loadingReferrers, setLoadingReferrers] = useState(true);
   const [referrerError, setReferrerError] = useState("");
-
-  // Check if user has already entered a referral code
-  const alreadyReferred = !!referralData.referredBy;
-  const successfulReferrals = referralData.successfulReferrals || [];
-
-  const referralVoucherOptions = [
+  const [referralVoucherOptions, setReferralVoucherOptions] = useState([
     { value: '20% Discount', description: 'Enjoy 20% off your next purchase.' },
     { value: 'Free Drink', description: 'Get a free drink of your choice.' },
     { value: 'Free Topping', description: 'Enjoy a free topping with your drink.' },
     { value: 'Free Up-size', description: 'Get a free up-size on your drink.' },
-  ];
+  ]);
+  const [referralRewards, setReferralRewards] = useState([]);
+
+  // Check if user has already entered a referral code
+  const alreadyReferred = !!referralData.referredBy;
+  const successfulReferrals = referralData.successfulReferrals || [];
 
   useEffect(() => {
     setReferralDataState(getReferralData());
@@ -62,6 +62,17 @@ function Referral() {
       .catch(err => {
         setReferrerError("Top referrers লোড করা যাচ্ছে না");
         setLoadingReferrers(false);
+      });
+  }, []);
+
+  // Fetch referral rewards from backend
+  useEffect(() => {
+    fetch('/api/admin/referral-reward')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          setReferralRewards(data.filter(item => item.status === 'active'));
+        }
       });
   }, []);
 
@@ -116,6 +127,56 @@ function Referral() {
 
   return (
     <div style={{ maxWidth: 360, margin: "0 auto", padding: "20px 0", position: "relative" }}>
+      {/* Show referral rewards at the very top, styled as a professional card */}
+      {referralRewards.length > 0 && (
+        <div style={{
+          background: '#fff',
+          borderRadius: 14,
+          boxShadow: '0 2px 12px rgba(24,144,255,0.10)',
+          marginBottom: 24,
+          padding: 0,
+          overflow: 'hidden',
+          border: '1.5px solid #e0e0e0',
+        }}>
+          <div style={{
+            background: 'linear-gradient(90deg, #1890ff 60%, #2db7f5 100%)',
+            color: '#fff',
+            padding: '16px 20px 10px 20px',
+            fontWeight: 700,
+            fontSize: 18,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            borderTopLeftRadius: 14,
+            borderTopRightRadius: 14,
+          }}>
+            <span role="img" aria-label="gift" style={{ fontSize: 24 }}>🎁</span>
+            Referral Rewards
+          </div>
+          <ul style={{
+            listStyle: 'none',
+            margin: 0,
+            padding: '16px 20px',
+            background: '#f8fbff',
+            borderBottomLeftRadius: 14,
+            borderBottomRightRadius: 14,
+          }}>
+            {referralRewards.map(rw => (
+              <li key={rw.id} style={{
+                fontSize: 15,
+                marginBottom: 8,
+                color: '#1890ff',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+                <span role="img" aria-label="star" style={{ fontSize: 18 }}>⭐</span>
+                <span>{rw.content}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {/* Close Button */}
       <button
         onClick={() => navigate("/")}
@@ -155,8 +216,8 @@ function Referral() {
           Claim Your Referral Reward
         </div>
         <div style={{ color: "#555", fontSize: 15, marginBottom: 18, textAlign: "center" }}>
-          If you are not a Goba! member, you must become a member to get a referral voucher.<br/>
-          Click the link below or scan the QR code.
+          If you are not a Goba! member, you must become a member to get a referral voucher.<br />
+          Click the link below.
         </div>
         <a
           href="https://members.mintycrm.com/goba/sign-in" // এখানে আপনার আসল CRM লিংক দিন
@@ -177,9 +238,6 @@ function Referral() {
         >
           Goba! CRM Join Link
         </a>
-        <div style={{ marginTop: 10, marginBottom: 10 }}>
-          <img src="/goba-poster.jpg" alt="Goba! CRM QR Code" style={{ width: 160, borderRadius: 10 }} />
-        </div>
       </div>
 
       {/* Stats Row */}
@@ -306,6 +364,7 @@ function Referral() {
         {error && <div style={{ color: "#d32f2f", marginTop: 10, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span role="img" aria-label="error">❌</span>{error}</div>}
         {success && <div style={{ color: "#388e3c", marginTop: 10, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span role="img" aria-label="success">✅</span>{success}</div>}
       </div>
+
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40, marginBottom: 24 }}>
         <button className="close-bottom-btn spin-style" onClick={() => navigate("/")}>Close</button>
       </div>

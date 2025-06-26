@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Wheel } from "react-custom-roulette";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import GrabVoucher from "./pages/GrabVoucher";
@@ -36,8 +36,48 @@ const cardColors = [
   "#1890ff"
 ];
 
-// ১০টা সেগমেন্টের ডাটা
-const wheelData = [
+function HomeCards() {
+  const navigate = useNavigate();
+  const [showWheel, setShowWheel] = useState(false);
+  const [mustSpin, setMustSpin] = useState(false);
+  const [prizeNumber, setPrizeNumber] = useState(0);
+  const [prize, setPrize] = useState(null);
+  const [wheelData, setWheelData] = useState([]);
+  const [backgroundColors, setBackgroundColors] = useState([]);
+
+  // Fetch spin wheel config from backend
+  useEffect(() => {
+    fetch('/api/admin/spin-wheel')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          setWheelData(data.map(item => ({ option: item.prize_label })));
+          setBackgroundColors([
+            "#f7931e", "#ffb84d", "#ffe066", "#fff799", "#d9f99d",
+            "#a7e9f9", "#5dade2", "#b39ddb", "#f8bbd0", "#f06292"
+          ].slice(0, data.length));
+        } else {
+          setWheelData([
+            { option: "20% Off\nYour Total Bill" },
+            { option: "5% Cashback\non Your Bill" },
+            { option: "Free Topping\nof Your Choice" },
+            { option: "50% Bill Rebate\nLimited Time!" },
+            { option: "Claim Any\nTopping Free" },
+            { option: "10% Discount\nExclusive Coupon" },
+            { option: "Complimentary\nJin Xuan Tea" },
+            { option: "10% Off\nSpecial Coupon" },
+            { option: "Free Topping\nTreat Yourself!" },
+            { option: "5% Instant\nBill Rebate" },
+          ]);
+          setBackgroundColors([
+            "#f7931e", "#ffb84d", "#ffe066", "#fff799", "#d9f99d",
+            "#a7e9f9", "#5dade2", "#b39ddb", "#f8bbd0", "#f06292"
+          ]);
+        }
+      })
+      .catch(() => {
+        // fallback to default
+        setWheelData([
   { option: "20% Off\nYour Total Bill" },
   { option: "5% Cashback\non Your Bill" },
   { option: "Free Topping\nof Your Choice" },
@@ -48,27 +88,13 @@ const wheelData = [
   { option: "10% Off\nSpecial Coupon" },
   { option: "Free Topping\nTreat Yourself!" },
   { option: "5% Instant\nBill Rebate" },
-];
-
-const backgroundColors = [
-  "#f7931e", // Orange
-  "#ffb84d", // Yellow-Orange
-  "#ffe066", // Yellow
-  "#fff799", // Light Yellow
-  "#d9f99d", // Light Green
-  "#a7e9f9", // Light Blue
-  "#5dade2", // Blue
-  "#b39ddb", // Purple
-  "#f8bbd0", // Pink
-  "#f06292", // Red-Pink
-];
-
-function HomeCards() {
-  const navigate = useNavigate();
-  const [showWheel, setShowWheel] = useState(false);
-  const [mustSpin, setMustSpin] = useState(false);
-  const [prizeNumber, setPrizeNumber] = useState(0);
-  const [prize, setPrize] = useState(null);
+        ]);
+        setBackgroundColors([
+          "#f7931e", "#ffb84d", "#ffe066", "#fff799", "#d9f99d",
+          "#a7e9f9", "#5dade2", "#b39ddb", "#f8bbd0", "#f06292"
+        ]);
+      });
+  }, []);
 
   // Responsive wheel size for mobile (smaller)
   const wheelSize = typeof window !== 'undefined' ? Math.min(window.innerWidth, 240) - 32 : 120;

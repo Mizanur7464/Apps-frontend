@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function getGrabbedVouchers() {
@@ -11,17 +11,94 @@ function saveGrabbedVoucher(voucher) {
   localStorage.setItem("grabbedVouchers", JSON.stringify([...current, voucher]));
 }
 
+// Helper to get all unclaimed spin prizes
+function getSpinPrizes() {
+  const data = localStorage.getItem("spinPrizes");
+  return data ? JSON.parse(data) : [];
+}
+
+function addSpinPrize(prize) {
+  const current = getSpinPrizes();
+  localStorage.setItem("spinPrizes", JSON.stringify([...current, prize]));
+}
+
+function removeSpinPrize(prize) {
+  const current = getSpinPrizes();
+  const idx = current.indexOf(prize);
+  if (idx !== -1) {
+    current.splice(idx, 1);
+    localStorage.setItem("spinPrizes", JSON.stringify(current));
+  }
+}
+
+// Helper to get claimed voucher keys
+function getClaimedVoucherKeys() {
+  const data = localStorage.getItem("claimedVouchers");
+  return data ? JSON.parse(data) : [];
+}
+
+function addClaimedVoucherKey(key) {
+  const current = getClaimedVoucherKeys();
+  if (!current.includes(key)) {
+    localStorage.setItem("claimedVouchers", JSON.stringify([...current, key]));
+  }
+}
+
 function GrabVoucher() {
   const [grabbed, setGrabbed] = useState(getGrabbedVouchers());
-  const [spinPrize, setSpinPrize] = useState(localStorage.getItem('spinPrize') || '');
+  const [spinPrizes, setSpinPrizes] = useState(getSpinPrizes());
   const [showModal, setShowModal] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showPoster, setShowPoster] = useState(false);
+  const [campaigns, setCampaigns] = useState([]);
+  const [selectedVoucher, setSelectedVoucher] = useState(null); // {type: 'campaign'|'spin', value: ...}
+  const [claimedKeys, setClaimedKeys] = useState(getClaimedVoucherKeys());
+  const [campaignClaims, setCampaignClaims] = useState({});
   const navigate = useNavigate();
 
-  const handleGrab = () => {
+  // Fetch active campaigns
+  useEffect(() => {
+    fetch('/api/admin/voucher-campaigns')
+      .then(res => res.json())
+      .then(data => {
+        setCampaigns(data.filter(c => c.status === 'active'));
+      });
+  }, []);
+
+  // Fetch campaign claims on mount
+  useEffect(() => {
+    if (campaigns.length > 0) {
+      Promise.all(campaigns.map(c =>
+        fetch(`/api/vouchers/count?campaignId=${c.id}`).then(res => res.json())
+      )).then(results => {
+        const claims = {};
+        campaigns.forEach((c, i) => {
+          claims[c.id] = results[i].count;
+        });
+        setCampaignClaims(claims);
+      });
+    }
+  }, [campaigns]);
+
+  // Listen for spinPrize in localStorage (from spin wheel)
+  useEffect(() => {
+    // If a new spinPrize is set (old logic), add it to spinPrizes array and clear old key
+    const singleSpinPrize = localStorage.getItem('spinPrize');
+    if (singleSpinPrize) {
+      addSpinPrize(singleSpinPrize);
+      setSpinPrizes(getSpinPrizes());
+      localStorage.removeItem('spinPrize');
+    }
+    // Listen for storage changes (if user spins in another tab)
+    const onStorage = () => setSpinPrizes(getSpinPrizes());
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const handleGrabVoucher = (voucherObj) => {
+    setSelectedVoucher(voucherObj);
     setShowModal(true);
     setError("");
     setSuccess("");
@@ -33,44 +110,87 @@ function GrabVoucher() {
       setError("You must confirm you are a Goba! member to grab this voucher.");
       return;
     }
-    if (!spinPrize) {
-      setError("Please spin the wheel to get a prize before grabbing a voucher.");
+    let userName = localStorage.getItem('userName');
+    if (!userName) {
+      userName = prompt('Enter your name (or phone/email):');
+      if (!userName) {
+        setError('You must enter your name to grab a voucher.');
+        return;
+      }
+      localStorage.setItem('userName', userName);
+    }
+    // If campaign selected
+    if (selectedVoucher && selectedVoucher.type === 'campaign') {
+      const campaign = selectedVoucher.value;
+      const voucher = {
+        id: Date.now(),
+        username: userName,
+        value: campaign.content,
+        description: 'Campaign Voucher',
+        prize: campaign.content,
+        status: 'Pending',
+      };
+      fetch('/api/vouchers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(voucher)
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to save voucher to server');
+          return res.json();
+        })
+        .then(data => {
+          saveGrabbedVoucher(voucher);
+          setGrabbed(getGrabbedVouchers());
+          setSuccess("Campaign voucher successfully grabbed!");
+          setShowModal(false);
+          setSelectedVoucher(null);
+          setError("");
+          addClaimedVoucherKey('campaign-' + campaign.id);
+          setClaimedKeys(getClaimedVoucherKeys());
+        })
+        .catch(err => {
+          setError("Failed to save voucher. Please try again.");
+        });
       return;
     }
-    // Prevent duplicate grab for same prize (optional: can allow multiple)
-    if (grabbed.find(v => v.value === spinPrize)) {
-      setError("You have already grabbed this voucher.");
+    // If spin prize selected
+    if (selectedVoucher && selectedVoucher.type === 'spin') {
+      const spinPrize = selectedVoucher.value;
+      const voucherWithPrize = {
+        id: Date.now(),
+        username: userName,
+        value: spinPrize,
+        description: 'Won from Spin',
+        prize: spinPrize,
+        status: 'Pending',
+      };
+      fetch('/api/vouchers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(voucherWithPrize)
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to save voucher to server');
+          return res.json();
+        })
+        .then(data => {
+          saveGrabbedVoucher(voucherWithPrize);
+          setGrabbed(getGrabbedVouchers());
+          setSuccess("Voucher successfully grabbed!");
+          setShowModal(false);
+          setError("");
+          removeSpinPrize(spinPrize);
+          setSpinPrizes(getSpinPrizes());
+          setSelectedVoucher(null);
+          addClaimedVoucherKey('spin-' + spinPrize);
+          setClaimedKeys(getClaimedVoucherKeys());
+        })
+        .catch(err => {
+          setError("Failed to save voucher. Please try again.");
+        });
       return;
     }
-    const voucherWithPrize = {
-      id: Date.now(),
-      value: spinPrize,
-      description: 'Won from Spin',
-      prize: spinPrize,
-      status: 'Pending',
-    };
-    // Save to backend
-    fetch('/api/vouchers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(voucherWithPrize)
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to save voucher to server');
-        return res.json();
-      })
-      .then(data => {
-        saveGrabbedVoucher(voucherWithPrize); // still save to localStorage for user's own view
-        setGrabbed(getGrabbedVouchers());
-        setSuccess("Voucher successfully grabbed!");
-        setShowModal(false);
-        localStorage.removeItem('spinPrize');
-        setSpinPrize('');
-        setError("");
-      })
-      .catch(err => {
-        setError("Failed to save voucher. Please try again.");
-      });
   };
 
   return (
@@ -98,41 +218,88 @@ function GrabVoucher() {
         ×
       </button>
       <h2 style={{ fontWeight: 700, marginBottom: 20, fontSize: 18 }}>Grab Voucher</h2>
-      <div style={{
-        background: "#1890ff",
-        color: "#fff",
-        borderRadius: 10,
-        padding: "14px 12px",
-        marginBottom: 12,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-      }}>
-        <div style={{ fontSize: 16, fontWeight: 600 }}>
-          {spinPrize ? spinPrize : 'Please spin the wheel to get a prize!'}
-        </div>
-        <div style={{ fontSize: 13, marginBottom: 8 }}>
-          {spinPrize ? 'You can grab this voucher.' : 'You must spin the wheel to get a voucher.'}
-        </div>
-        <button
-          style={{
-            background: spinPrize ? '#2db7f5' : '#b0b0b0',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '8px 0',
-            fontWeight: 600,
-            fontSize: 14,
-            cursor: spinPrize ? 'pointer' : 'not-allowed',
-            width: '100%',
-          }}
-          disabled={!spinPrize}
-          onClick={handleGrab}
-        >
-          {spinPrize ? 'Grab Now' : 'Grab Disabled'}
-        </button>
-      </div>
+      {/* Show campaign vouchers as cards */}
+      {campaigns.map(campaign => {
+        const claimed = claimedKeys.includes('campaign-' + campaign.id);
+        const claimedCount = campaignClaims[campaign.id] || 0;
+        const outOfStock = claimedCount >= campaign.quantity;
+        return (
+          <div key={"campaign-"+campaign.id} style={{
+            background: "#2db7f5",
+            color: "#fff",
+            borderRadius: 10,
+            padding: "14px 12px",
+            marginBottom: 12,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>{campaign.content}</div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>Available: {Math.max(0, campaign.quantity - claimedCount)} left</div>
+            <button
+              style={{
+                background: outOfStock || claimed ? '#b0b0b0' : '#2db7f5',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '8px 0',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: outOfStock || claimed ? 'not-allowed' : 'pointer',
+                width: '100%',
+                opacity: outOfStock || claimed ? 0.7 : 1,
+              }}
+              onClick={() => !outOfStock && !claimed && handleGrabVoucher({ type: 'campaign', value: campaign })}
+              disabled={outOfStock || claimed}
+            >
+              {outOfStock ? 'Out of Stock' : claimed ? 'Claimed' : 'Grab Now'}
+            </button>
+          </div>
+        );
+      })}
+      {/* Show all unclaimed spin prizes as cards */}
+      {spinPrizes.map((prize, idx) => {
+        const claimed = claimedKeys.includes('spin-' + prize);
+        return (
+          <div key={"spin-"+idx+"-"+prize} style={{
+            background: "#1890ff",
+            color: "#fff",
+            borderRadius: 10,
+            padding: "14px 12px",
+            marginBottom: 12,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>{prize}</div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>You can grab this spin voucher.</div>
+            <button
+              style={{
+                background: claimed ? '#b0b0b0' : '#2db7f5',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '8px 0',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: claimed ? 'not-allowed' : 'pointer',
+                width: '100%',
+                opacity: claimed ? 0.7 : 1,
+              }}
+              onClick={() => !claimed && handleGrabVoucher({ type: 'spin', value: prize })}
+              disabled={claimed}
+            >
+              {claimed ? 'Claimed' : 'Grab Now'}
+            </button>
+          </div>
+        );
+      })}
+      {/* If no campaigns and no spin prizes, show message */}
+      {campaigns.length === 0 && spinPrizes.length === 0 && (
+        <div style={{ color: "#b0b0b0", fontSize: 15 }}>No vouchers available to grab right now.</div>
+      )}
       {/* Modal for Goba! member confirmation */}
       {showModal && (
         <div style={{
