@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+const apiUrl = process.env.REACT_APP_API_URL || "";
+
 function getGrabbedVouchers() {
   const data = localStorage.getItem("grabbedVouchers");
   return data ? JSON.parse(data) : [];
@@ -60,7 +62,7 @@ function GrabVoucher() {
 
   // Fetch active campaigns
   useEffect(() => {
-    fetch('/api/admin/voucher-campaigns')
+    fetch(`${apiUrl}/api/admin/voucher-campaigns`)
       .then(res => res.json())
       .then(data => {
         setCampaigns(data.filter(c => c.status === 'active'));
@@ -71,7 +73,7 @@ function GrabVoucher() {
   useEffect(() => {
     if (campaigns.length > 0) {
       Promise.all(campaigns.map(c =>
-        fetch(`/api/vouchers/count?campaignId=${c.id}`).then(res => res.json())
+        fetch(`${apiUrl}/api/vouchers/count?campaignId=${c.id}`).then(res => res.json())
       )).then(results => {
         const claims = {};
         campaigns.forEach((c, i) => {
@@ -130,7 +132,7 @@ function GrabVoucher() {
         prize: campaign.content,
         status: 'Pending',
       };
-      fetch('/api/vouchers', {
+      fetch(`${apiUrl}/api/vouchers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(voucher)
@@ -165,7 +167,7 @@ function GrabVoucher() {
         prize: spinPrize,
         status: 'Pending',
       };
-      fetch('/api/vouchers', {
+      fetch(`${apiUrl}/api/vouchers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(voucherWithPrize)
@@ -239,16 +241,16 @@ function GrabVoucher() {
             <div style={{ fontSize: 13, marginBottom: 8 }}>Available: {Math.max(0, campaign.quantity - claimedCount)} left</div>
             <button
               style={{
-                background: outOfStock || claimed ? '#b0b0b0' : '#2db7f5',
+                background: outOfStock ? '#b0b0b0' : claimed ? '#b0b0b0' : '#2db7f5',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 6,
                 padding: '8px 0',
                 fontWeight: 600,
                 fontSize: 14,
-                cursor: outOfStock || claimed ? 'not-allowed' : 'pointer',
+                cursor: outOfStock ? 'not-allowed' : claimed ? 'not-allowed' : 'pointer',
                 width: '100%',
-                opacity: outOfStock || claimed ? 0.7 : 1,
+                opacity: outOfStock ? 0.7 : claimed ? 0.7 : 1,
               }}
               onClick={() => !outOfStock && !claimed && handleGrabVoucher({ type: 'campaign', value: campaign })}
               disabled={outOfStock || claimed}

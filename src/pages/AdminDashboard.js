@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const API = (path) => `/api/admin/${path}`;
+const apiUrl = process.env.REACT_APP_API_URL || "";
 
 function AdminDashboard() {
   const [vouchers, setVouchers] = useState([]);
@@ -21,17 +21,17 @@ function AdminDashboard() {
   const [referrals, setReferrals] = useState([]);
 
   useEffect(() => {
-    fetch("/api/admin/vouchers")
+    fetch(`${apiUrl}/api/admin/vouchers`)
       .then(res => res.json())
       .then(data => setVouchers(data));
-    fetch(API('voucher-campaigns')).then(r => r.json()).then(setVoucherCampaigns);
-    fetch(API('spin-wheel')).then(r => r.json()).then(setSpinConfigs);
-    fetch('/api/admin/referrals').then(r => r.json()).then(setReferrals);
-    fetch('/api/admin/referral-reward').then(r => r.json()).then(setReferralRewards);
+    fetch(`${apiUrl}/api/admin/voucher-campaigns`).then(r => r.json()).then(setVoucherCampaigns);
+    fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(setSpinConfigs);
+    fetch(`${apiUrl}/api/admin/referrals`).then(r => r.json()).then(setReferrals);
+    fetch(`${apiUrl}/api/admin/referral-reward`).then(r => r.json()).then(setReferralRewards);
   }, []);
 
   const handleStatusChange = (id, newStatus) => {
-    fetch(`/api/voucher/${id}/status`, {
+    fetch(`${apiUrl}/api/voucher/${id}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus })
@@ -52,14 +52,14 @@ function AdminDashboard() {
   // Handlers for voucher campaigns
   const handleVoucherSubmit = (e) => {
     e.preventDefault();
-    fetch(API('voucher-campaigns'), {
+    fetch(`${apiUrl}/api/admin/voucher-campaigns`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(voucherForm)
     })
       .then(r => r.json())
       .then(() => {
-        fetch(API('voucher-campaigns')).then(r => r.json()).then(setVoucherCampaigns);
+        fetch(`${apiUrl}/api/admin/voucher-campaigns`).then(r => r.json()).then(setVoucherCampaigns);
         setVoucherForm({ content: '', quantity: 1, status: 'active' });
       });
   };
@@ -77,28 +77,28 @@ function AdminDashboard() {
     e.preventDefault();
     // Ensure each prize has a status field
     const prizesWithStatus = spinForm.map(prize => ({ ...prize, status: prize.status || 'active' }));
-    fetch(API('spin-wheel'), {
+    fetch(`${apiUrl}/api/admin/spin-wheel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prizes: prizesWithStatus })
     })
       .then(r => r.json())
       .then(() => {
-        fetch(API('spin-wheel')).then(r => r.json()).then(setSpinConfigs);
+        fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(setSpinConfigs);
         setSpinForm([{ prize_label: '', win_chance: 0 }]);
       });
   };
 
   const handleReferralSubmit = (e) => {
     e.preventDefault();
-    fetch('/api/admin/referral-reward', {
+    fetch(`${apiUrl}/api/admin/referral-reward`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(referralForm)
     })
       .then(r => r.json())
       .then(() => {
-        fetch('/api/admin/referral-reward').then(r => r.json()).then(setReferralRewards);
+        fetch(`${apiUrl}/api/admin/referral-reward`).then(r => r.json()).then(setReferralRewards);
         setReferralForm({ content: '', status: 'active' });
       });
   };
@@ -106,33 +106,33 @@ function AdminDashboard() {
   // Spin wheel prize status toggle
   const handleSpinStatusChange = (id, currentStatus) => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    fetch(`/api/admin/spin-wheel/${id}/status`, {
+    fetch(`${apiUrl}/api/admin/spin-wheel/${id}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     })
       .then(res => res.json())
       .then(() => {
-        fetch(API('spin-wheel')).then(r => r.json()).then(setSpinConfigs);
+        fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(setSpinConfigs);
       });
   };
 
   // Add this handler for deleting a campaign
   const handleDeleteCampaign = (id) => {
-    fetch(`/api/admin/voucher-campaigns/${id}`, {
+    fetch(`${apiUrl}/api/admin/voucher-campaigns/${id}`, {
       method: 'DELETE',
     })
       .then(r => r.json())
       .then(() => {
-        fetch(API('voucher-campaigns')).then(r => r.json()).then(setVoucherCampaigns);
+        fetch(`${apiUrl}/api/admin/voucher-campaigns`).then(r => r.json()).then(setVoucherCampaigns);
       });
   };
 
   // Delete referral reward
   const handleDeleteReferralReward = (id) => {
-    fetch(`/api/admin/referral-reward/${id}`, { method: 'DELETE' })
+    fetch(`${apiUrl}/api/admin/referral-reward/${id}`, { method: 'DELETE' })
       .then(r => r.json())
-      .then(() => fetch('/api/admin/referral-reward').then(r => r.json()).then(setReferralRewards));
+      .then(() => fetch(`${apiUrl}/api/admin/referral-reward`).then(r => r.json()).then(setReferralRewards));
   };
 
   // Referral count per referrer

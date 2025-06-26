@@ -9,12 +9,13 @@ function getGrabbedVouchers() {
 function MyVouchers() {
   const [vouchers, setVouchers] = useState([]);
   const navigate = useNavigate();
+  const apiUrl = process.env.REACT_APP_API_URL || "";
 
   useEffect(() => {
     // ইউজারের নাম/আইডি localStorage থেকে নিন
     const userName = localStorage.getItem('userName');
     if (!userName) return;
-    fetch(`/api/my-vouchers?username=${encodeURIComponent(userName)}`)
+    fetch(`${apiUrl}/api/my-vouchers?username=${encodeURIComponent(userName)}`)
       .then(res => res.json())
       .then(data => setVouchers(data));
   }, []);
