@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Simulate a user id/username for demo
-const USER_KEY = "demoUser";
-
 function getReferralData() {
   const data = localStorage.getItem("referralData");
   return data ? JSON.parse(data) : {};
@@ -23,14 +20,25 @@ function saveGrabbedVoucher(voucher) {
   localStorage.setItem("grabbedVouchers", JSON.stringify([...current, voucher]));
 }
 
+// Add: get or set unique userId in localStorage
+function getOrCreateUserId() {
+  let userId = localStorage.getItem("userId");
+  if (!userId) {
+    userId = "user-" + Date.now() + "-" + Math.floor(Math.random() * 10000);
+    localStorage.setItem("userId", userId);
+  }
+  return userId;
+}
+
 function Referral() {
-  const [referralCode] = useState(USER_KEY); // Simulate unique code
+  const navigate = useNavigate();
+  const [userId] = useState(getOrCreateUserId());
+  const [referralCode] = useState(userId); // Now dynamic
   const [copied, setCopied] = useState(false);
   const [referralInput, setReferralInput] = useState("");
   const [referralData, setReferralDataState] = useState(getReferralData());
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate();
   const [topReferrers, setTopReferrers] = useState([]);
   const [loadingReferrers, setLoadingReferrers] = useState(true);
   const [referrerError, setReferrerError] = useState("");
@@ -46,9 +54,18 @@ function Referral() {
   const alreadyReferred = !!referralData.referredBy;
   const successfulReferrals = referralData.successfulReferrals || [];
 
+  // Handle referral code from URL
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const codeFromUrl = params.get("code");
+    if (codeFromUrl && !alreadyReferred && codeFromUrl !== userId) {
+      // Auto-fill and submit referral code if not self
+      const newData = { ...getReferralData(), referredBy: codeFromUrl };
+      setReferralData(newData);
+      setReferralDataState(newData);
+    }
     setReferralDataState(getReferralData());
-  }, []);
+  }, [userId]);
 
   // Fetch top referrers from backend
   useEffect(() => {
@@ -77,7 +94,7 @@ function Referral() {
   }, []);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(window.location.origin + "/referral?code=" + referralCode);
+    navigator.clipboard.writeText(window.location.origin + "/referral?code=" + userId);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -90,7 +107,7 @@ function Referral() {
       setError("Please enter a referral code.");
       return;
     }
-    if (referralInput === referralCode) {
+    if (referralInput === userId) {
       setError("You cannot refer yourself.");
       return;
     }
@@ -116,13 +133,13 @@ function Referral() {
     // Simulate updating the referrer's count (in real app, backend would handle this)
     let allReferralStats = JSON.parse(localStorage.getItem("allReferralStats") || "{}")
     if (!allReferralStats[referralInput]) allReferralStats[referralInput] = [];
-    allReferralStats[referralInput].push(USER_KEY);
+    allReferralStats[referralInput].push(userId);
     localStorage.setItem("allReferralStats", JSON.stringify(allReferralStats));
   };
 
   // Get number of successful referrals for this user
   let allReferralStats = JSON.parse(localStorage.getItem("allReferralStats") || "{}")
-  const myReferrals = allReferralStats[referralCode] || [];
+  const myReferrals = allReferralStats[userId] || [];
   const myVouchers = getGrabbedVouchers().filter(v => v.id && v.id.toString().startsWith("referral-"));
 
   return (
@@ -282,7 +299,7 @@ function Referral() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input
             type="text"
-            value={window.location.origin + "/referral?code=" + referralCode}
+            value={window.location.origin + "/referral?code=" + userId}
             readOnly
             style={{
               flex: 1,
