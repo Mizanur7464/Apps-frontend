@@ -31,7 +31,7 @@ function getOrCreateUserId() {
 }
 
 // Add bot username for Telegram deep link
-const botUsername = "GobaDemoBot"; // without @
+const botUsername = "GobaFriendsBot"; // without @
 
 function Referral() {
   const navigate = useNavigate();
