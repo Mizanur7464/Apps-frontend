@@ -30,6 +30,9 @@ function getOrCreateUserId() {
   return userId;
 }
 
+// Add bot username for Telegram deep link
+const botUsername = "GobaDemoBot"; // without @
+
 function Referral() {
   const navigate = useNavigate();
   const [userId] = useState(getOrCreateUserId());
@@ -93,8 +96,11 @@ function Referral() {
       });
   }, []);
 
+  // Generate Telegram deep link
+  const telegramLink = `https://t.me/${botUsername}?start=${userId}`;
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(window.location.origin + "/referral?code=" + userId);
+    navigator.clipboard.writeText(telegramLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -299,7 +305,7 @@ function Referral() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input
             type="text"
-            value={window.location.origin + "/referral?code=" + userId}
+            value={telegramLink}
             readOnly
             style={{
               flex: 1,

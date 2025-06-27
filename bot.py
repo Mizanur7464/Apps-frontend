@@ -2,7 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 TOKEN = "7911381363:AAF46PiidTRN_EcfiR2xJnFAiAuY2UHUHY8"  # BotFather থেকে পাওয়া টোকেন বসাও
-WEBAPP_URL = "https://apps-frontend-git-main-mizanurs-projects-24e9ba9d.vercel.app/"  # এখানে তোমার React অ্যাপের লিঙ্ক বসাও
+WEBAPP_URL = "https://apps-frontend-git-main-mizanurs-projects-24e9ba9d.vercel.app"  # এখানে তোমার React অ্যাপের লিঙ্ক বসাও
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
