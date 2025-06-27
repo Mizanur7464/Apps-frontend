@@ -73,7 +73,8 @@ function Referral() {
   // Fetch top referrers from backend
   useEffect(() => {
     setLoadingReferrers(true);
-    fetch("http://localhost:5001/api/top-referrers")
+    const apiUrl = process.env.REACT_APP_API_URL || "";
+    fetch(apiUrl + "/api/top-referrers")
       .then(res => res.json())
       .then(data => {
         setTopReferrers(data);
