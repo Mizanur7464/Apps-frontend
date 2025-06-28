@@ -86,7 +86,8 @@ function Referral() {
 
   // Fetch referral rewards from backend
   useEffect(() => {
-    fetch('/api/admin/referral-reward')
+    const apiUrl = process.env.REACT_APP_API_URL || "";
+    fetch(apiUrl + '/api/admin/referral-reward')
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {

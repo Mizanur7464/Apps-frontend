@@ -49,7 +49,8 @@ function HomeCards() {
 
   // Fetch spin wheel config from backend
   useEffect(() => {
-    fetch('/api/admin/spin-wheel')
+    const apiUrl = process.env.REACT_APP_API_URL || "";
+    fetch(apiUrl + '/api/admin/spin-wheel')
       .then(res => res.json())
       .then(data => {
         if (data && data.prizes && data.prizes.length > 0) {
