@@ -25,7 +25,15 @@ function AdminDashboard() {
       .then(res => res.json())
       .then(data => setVouchers(data));
     fetch(`${apiUrl}/api/admin/voucher-campaigns`).then(r => r.json()).then(setVoucherCampaigns);
-    fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(setSpinConfigs);
+    fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        setSpinConfigs(data);
+      } else if (data && Array.isArray(data.prizes)) {
+        setSpinConfigs(data.prizes);
+      } else {
+        setSpinConfigs([]);
+      }
+    });
     fetch(`${apiUrl}/api/admin/referrals`).then(r => r.json()).then(setReferrals);
     fetch(`${apiUrl}/api/admin/referral-reward`).then(r => r.json()).then(setReferralRewards);
   }, []);
@@ -84,7 +92,15 @@ function AdminDashboard() {
     })
       .then(r => r.json())
       .then(() => {
-        fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(setSpinConfigs);
+        fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
+          if (Array.isArray(data)) {
+            setSpinConfigs(data);
+          } else if (data && Array.isArray(data.prizes)) {
+            setSpinConfigs(data.prizes);
+          } else {
+            setSpinConfigs([]);
+          }
+        });
         setSpinForm([{ prize_label: '', win_chance: 0 }]);
       });
   };
@@ -113,7 +129,15 @@ function AdminDashboard() {
     })
       .then(res => res.json())
       .then(() => {
-        fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(setSpinConfigs);
+        fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
+          if (Array.isArray(data)) {
+            setSpinConfigs(data);
+          } else if (data && Array.isArray(data.prizes)) {
+            setSpinConfigs(data.prizes);
+          } else {
+            setSpinConfigs([]);
+          }
+        });
       });
   };
 
@@ -141,6 +165,30 @@ function AdminDashboard() {
     refCount[r.referrer] = (refCount[r.referrer] || 0) + 1;
   });
 
+  // Add a reload handler
+  const handleReload = () => {
+    fetch(`${apiUrl}/api/admin/vouchers`)
+      .then(res => res.json())
+      .then(data => setVouchers(data));
+    fetch(`${apiUrl}/api/admin/voucher-campaigns`).then(r => r.json()).then(setVoucherCampaigns);
+    fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        setSpinConfigs(data);
+      } else if (data && Array.isArray(data.prizes)) {
+        setSpinConfigs(data.prizes);
+      } else {
+        setSpinConfigs([]);
+      }
+    });
+    fetch(`${apiUrl}/api/admin/referrals`).then(r => r.json()).then(setReferrals);
+    fetch(`${apiUrl}/api/admin/referral-reward`).then(r => r.json()).then(setReferralRewards);
+  };
+
+  // Add a reload handler for referrals only
+  const handleReloadReferrals = () => {
+    fetch(`${apiUrl}/api/admin/referrals`).then(r => r.json()).then(setReferrals);
+  };
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 30 }}>
       <h2 style={{ fontWeight: 700, marginBottom: 20 }}>Admin Dashboard</h2>
@@ -162,6 +210,22 @@ function AdminDashboard() {
           <option value="Issued">Issued</option>
           <option value="Void">Void</option>
         </select>
+        <button
+          onClick={handleReload}
+          style={{
+            padding: '8px 18px',
+            borderRadius: 6,
+            border: 'none',
+            background: '#1890ff',
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: 15,
+            cursor: 'pointer',
+            marginLeft: 8
+          }}
+        >
+          Load
+        </button>
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
         <thead>
@@ -337,7 +401,25 @@ function AdminDashboard() {
       </section>
 
       {/* Referral Report/List */}
-      <h2>Referral Report</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <h2 style={{ margin: 0 }}>Referral Report</h2>
+        <button
+          onClick={handleReloadReferrals}
+          style={{
+            padding: '6px 16px',
+            borderRadius: 6,
+            border: 'none',
+            background: '#1890ff',
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: 15,
+            cursor: 'pointer',
+            marginLeft: 4
+          }}
+        >
+          Load
+        </button>
+      </div>
       <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa', marginBottom: 24 }}>
         <thead>
           <tr>
@@ -356,7 +438,25 @@ function AdminDashboard() {
         </tbody>
       </table>
       {/* Referral Count per Referrer */}
-      <h3>Top Referrers</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, marginTop: 16 }}>
+        <h3 style={{ margin: 0 }}>Top Referrers</h3>
+        <button
+          onClick={handleReloadReferrals}
+          style={{
+            padding: '6px 16px',
+            borderRadius: 6,
+            border: 'none',
+            background: '#1890ff',
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: 15,
+            cursor: 'pointer',
+            marginLeft: 4
+          }}
+        >
+          Load
+        </button>
+      </div>
       <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa', marginBottom: 24 }}>
         <thead>
           <tr>

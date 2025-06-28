@@ -44,18 +44,24 @@ function HomeCards() {
   const [prize, setPrize] = useState(null);
   const [wheelData, setWheelData] = useState([]);
   const [backgroundColors, setBackgroundColors] = useState([]);
+  const [configVersion, setConfigVersion] = useState(null);
+  const [canSpin, setCanSpin] = useState(true);
 
   // Fetch spin wheel config from backend
   useEffect(() => {
     fetch('/api/admin/spin-wheel')
       .then(res => res.json())
       .then(data => {
-        if (data && data.length > 0) {
-          setWheelData(data.map(item => ({ option: item.prize_label })));
+        if (data && data.prizes && data.prizes.length > 0) {
+          setWheelData(data.prizes.map(item => ({ option: item.prize_label })));
           setBackgroundColors([
             "#f7931e", "#ffb84d", "#ffe066", "#fff799", "#d9f99d",
             "#a7e9f9", "#5dade2", "#b39ddb", "#f8bbd0", "#f06292"
-          ].slice(0, data.length));
+          ].slice(0, data.prizes.length));
+          setConfigVersion(data.configVersion);
+          // Check if user already spun for this config
+          const lastSpinConfigVersion = localStorage.getItem('lastSpinConfigVersion');
+          setCanSpin(lastSpinConfigVersion !== data.configVersion);
         } else {
           setWheelData([
             { option: "20% Off\nYour Total Bill" },
@@ -73,26 +79,29 @@ function HomeCards() {
             "#f7931e", "#ffb84d", "#ffe066", "#fff799", "#d9f99d",
             "#a7e9f9", "#5dade2", "#b39ddb", "#f8bbd0", "#f06292"
           ]);
+          setConfigVersion(null);
+          setCanSpin(true);
         }
       })
       .catch(() => {
-        // fallback to default
         setWheelData([
-  { option: "20% Off\nYour Total Bill" },
-  { option: "5% Cashback\non Your Bill" },
-  { option: "Free Topping\nof Your Choice" },
-  { option: "50% Bill Rebate\nLimited Time!" },
-  { option: "Claim Any\nTopping Free" },
-  { option: "10% Discount\nExclusive Coupon" },
-  { option: "Complimentary\nJin Xuan Tea" },
-  { option: "10% Off\nSpecial Coupon" },
-  { option: "Free Topping\nTreat Yourself!" },
-  { option: "5% Instant\nBill Rebate" },
+          { option: "20% Off\nYour Total Bill" },
+          { option: "5% Cashback\non Your Bill" },
+          { option: "Free Topping\nof Your Choice" },
+          { option: "50% Bill Rebate\nLimited Time!" },
+          { option: "Claim Any\nTopping Free" },
+          { option: "10% Discount\nExclusive Coupon" },
+          { option: "Complimentary\nJin Xuan Tea" },
+          { option: "10% Off\nSpecial Coupon" },
+          { option: "Free Topping\nTreat Yourself!" },
+          { option: "5% Instant\nBill Rebate" },
         ]);
         setBackgroundColors([
           "#f7931e", "#ffb84d", "#ffe066", "#fff799", "#d9f99d",
           "#a7e9f9", "#5dade2", "#b39ddb", "#f8bbd0", "#f06292"
         ]);
+        setConfigVersion(null);
+        setCanSpin(true);
       });
   }, []);
 
@@ -100,11 +109,17 @@ function HomeCards() {
   const wheelSize = typeof window !== 'undefined' ? Math.min(window.innerWidth, 240) - 32 : 120;
 
   const handleSpinClick = () => {
+    if (!canSpin || !configVersion) return;
     const segments = wheelData.length;
     const newPrizeNumber = Math.floor(Math.random() * segments);
     setPrizeNumber(newPrizeNumber);
     setMustSpin(true);
     setPrize(null);
+    // Mark as spun for this config
+    if (configVersion) {
+      localStorage.setItem('lastSpinConfigVersion', configVersion);
+      setCanSpin(false);
+    }
   };
 
   const handleCloseWheel = () => {
@@ -255,19 +270,29 @@ function HomeCards() {
                 <button
                   style={{
                     padding: "10px 20px",
-                    background: "#1890ff",
+                    background: canSpin && configVersion ? "#1890ff" : "#b0b0b0",
                     color: "#fff",
                     border: "none",
                     borderRadius: 8,
                     fontWeight: 600,
                     fontSize: 15,
-                    cursor: "pointer",
+                    cursor: canSpin && configVersion ? "pointer" : "not-allowed",
                   }}
                   onClick={handleSpinClick}
-                  disabled={mustSpin}
+                  disabled={mustSpin || !canSpin || !configVersion}
                 >
-                  {mustSpin ? "Spinning..." : "Spin Now"}
+                  {mustSpin ? "Spinning..." : canSpin && configVersion ? "Spin Now" : configVersion ? "Already Spun" : "No Spin Available"}
                 </button>
+                {!canSpin && configVersion && (
+                  <div style={{ color: '#d32f2f', marginTop: 8, fontSize: 14 }}>
+                    You have already spun for the current spin config. Please wait for admin to update the spin wheel.
+                  </div>
+                )}
+                {!configVersion && (
+                  <div style={{ color: '#d32f2f', marginTop: 8, fontSize: 14 }}>
+                    No spin prizes available right now.
+                  </div>
+                )}
               </div>
             </div>
             <button

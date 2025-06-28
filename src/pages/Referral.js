@@ -36,7 +36,6 @@ const botUsername = "GobaFriendsBot"; // without @
 function Referral() {
   const navigate = useNavigate();
   const [userId] = useState(getOrCreateUserId());
-  const [referralCode] = useState(userId); // Now dynamic
   const [copied, setCopied] = useState(false);
   const [referralInput, setReferralInput] = useState("");
   const [referralData, setReferralDataState] = useState(getReferralData());
@@ -45,7 +44,7 @@ function Referral() {
   const [topReferrers, setTopReferrers] = useState([]);
   const [loadingReferrers, setLoadingReferrers] = useState(true);
   const [referrerError, setReferrerError] = useState("");
-  const [referralVoucherOptions, setReferralVoucherOptions] = useState([
+  const [referralVoucherOptions] = useState([
     { value: '20% Discount', description: 'Enjoy 20% off your next purchase.' },
     { value: 'Free Drink', description: 'Get a free drink of your choice.' },
     { value: 'Free Topping', description: 'Enjoy a free topping with your drink.' },
@@ -55,7 +54,6 @@ function Referral() {
 
   // Check if user has already entered a referral code
   const alreadyReferred = !!referralData.referredBy;
-  const successfulReferrals = referralData.successfulReferrals || [];
 
   // Handle referral code from URL
   useEffect(() => {
@@ -68,7 +66,7 @@ function Referral() {
       setReferralDataState(newData);
     }
     setReferralDataState(getReferralData());
-  }, [userId]);
+  }, [userId, alreadyReferred]);
 
   // Fetch top referrers from backend
   useEffect(() => {
@@ -201,6 +199,90 @@ function Referral() {
           </ul>
         </div>
       )}
+      {/* New Claim Referral Card (matches provided image) */}
+      <div style={{
+        background: "#fff",
+        border: "1.5px solid #e0e0e0",
+        borderRadius: 14,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        padding: 28,
+        marginBottom: 28,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center"
+      }}>
+        <div style={{ fontSize: 38, marginBottom: 8 }}>🤝</div>
+        <div style={{ fontWeight: 700, fontSize: 20, color: "#1890ff", marginBottom: 6, textAlign: "center" }}>
+          Claim Your Referral Reward
+        </div>
+        <div style={{ color: "#555", fontSize: 15, marginBottom: 18, textAlign: "center" }}>
+          If you are not a Goba! member, you must become a member to get a referral voucher.<br />
+          Click the link below.
+        </div>
+        <form onSubmit={handleReferralSubmit} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+          <input
+            type="text"
+            placeholder="Enter referral code"
+            value={referralInput}
+            onChange={e => setReferralInput(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 6,
+              border: "1px solid #b0b0b0",
+              fontSize: 15,
+              width: 180,
+            }}
+            disabled={alreadyReferred}
+          />
+          <button
+            type="submit"
+            style={{
+              background: "#1890ff",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              padding: "8px 18px",
+              fontWeight: 600,
+              fontSize: 15,
+              cursor: alreadyReferred ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center"
+            }}
+            disabled={alreadyReferred}
+          >
+            <span role="img" aria-label="gift">🎁</span>
+            <span style={{ marginLeft: 6 }}>Submit</span>
+          </button>
+        </form>
+        {alreadyReferred && (
+          <div style={{ color: "#388e3c", fontWeight: 500, display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+            <span role="img" aria-label="success">🎉</span> You have already used a referral code.
+          </div>
+        )}
+        {error && <div style={{ color: "#d32f2f", marginTop: 2, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span role="img" aria-label="error">❌</span>{error}</div>}
+        {success && <div style={{ color: "#388e3c", marginTop: 2, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span role="img" aria-label="success">✅</span>{success}</div>}
+        <a
+          href="https://members.mintycrm.com/goba/sign-in"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'block',
+            background: '#1890ff',
+            color: '#fff',
+            borderRadius: 8,
+            padding: '14px 0',
+            fontWeight: 700,
+            fontSize: 18,
+            textDecoration: 'none',
+            marginTop: 18,
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(24,144,255,0.08)'
+          }}
+        >
+          Join Goba! Membership Now
+        </a>
+      </div>
       {/* Close Button */}
       <button
         onClick={() => navigate("/")}
@@ -223,47 +305,6 @@ function Referral() {
       >
         ×
       </button>
-      {/* Claim Reward Card */}
-      <div style={{
-        background: "#fff",
-        border: "1.5px solid #e0e0e0",
-        borderRadius: 14,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-        padding: 28,
-        marginBottom: 22,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center"
-      }}>
-        <div style={{ fontSize: 38, marginBottom: 8 }}>🤝</div>
-        <div style={{ fontWeight: 700, fontSize: 20, color: "#1890ff", marginBottom: 6, textAlign: "center" }}>
-          Claim Your Referral Reward
-        </div>
-        <div style={{ color: "#555", fontSize: 15, marginBottom: 18, textAlign: "center" }}>
-          If you are not a Goba! member, you must become a member to get a referral voucher.<br />
-          Click the link below.
-        </div>
-        <a
-          href="https://members.mintycrm.com/goba/sign-in" // এখানে আপনার আসল CRM লিংক দিন
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            background: '#1890ff',
-            color: '#fff',
-            borderRadius: 8,
-            padding: '10px 24px',
-            fontWeight: 700,
-            fontSize: 16,
-            textDecoration: 'none',
-            marginBottom: 12,
-            boxShadow: '0 2px 8px rgba(24,144,255,0.08)'
-          }}
-        >
-          Goba! CRM Join Link
-        </a>
-      </div>
-
       {/* Stats Row */}
       <div style={{ display: "flex", gap: 14, marginBottom: 22 }}>
         <div style={{ flex: 1, background: "#fff", border: "1.5px solid #e0e0e0", borderRadius: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.03)", padding: 16, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -341,52 +382,6 @@ function Referral() {
           </button>
         </div>
         {copied && <div style={{ color: "#2db7f5", fontSize: 13, marginTop: 4 }}>Link copied to clipboard!</div>}
-      </div>
-
-      {/* Referral Input Card */}
-      <div style={{ background: "#fff", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", padding: 20, border: "1px solid #e0e0e0" }}>
-        <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 15 }}>Were you referred by someone?</div>
-        {alreadyReferred ? (
-          <div style={{ color: "#388e3c", fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
-            <span role="img" aria-label="success">🎉</span> You have already used a referral code.
-          </div>
-        ) : (
-          <form onSubmit={handleReferralSubmit} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <input
-              type="text"
-              placeholder="Enter referral code"
-              value={referralInput}
-              onChange={e => setReferralInput(e.target.value)}
-              style={{
-                padding: "8px 12px",
-                borderRadius: 6,
-                border: "1px solid #b0b0b0",
-                fontSize: 15,
-                width: 180,
-              }}
-            />
-            <button
-              type="submit"
-              style={{
-                background: "#1890ff",
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
-                padding: "8px 18px",
-                fontWeight: 600,
-                fontSize: 15,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center"
-              }}
-            >
-              <span role="img" aria-label="gift">🎁</span>
-              <span style={{ marginLeft: 6 }}>Submit</span>
-            </button>
-          </form>
-        )}
-        {error && <div style={{ color: "#d32f2f", marginTop: 10, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span role="img" aria-label="error">❌</span>{error}</div>}
-        {success && <div style={{ color: "#388e3c", marginTop: 10, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}><span role="img" aria-label="success">✅</span>{success}</div>}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40, marginBottom: 24 }}>
