@@ -43,7 +43,10 @@ function HomeCards() {
   const [prizeNumber, setPrizeNumber] = useState(0);
   const [prize, setPrize] = useState(null);
   const [wheelData, setWheelData] = useState([]);
-  const [backgroundColors, setBackgroundColors] = useState([]);
+  const [backgroundColors, setBackgroundColors] = useState([
+    "#f7931e", "#ffb84d", "#ffe066", "#fff799", "#d9f99d",
+    "#a7e9f9", "#5dade2", "#b39ddb", "#f8bbd0", "#f06292"
+  ]);
   const [configVersion, setConfigVersion] = useState(null);
   const [canSpin, setCanSpin] = useState(true);
 
@@ -53,12 +56,14 @@ function HomeCards() {
     fetch(apiUrl + '/api/admin/spin-wheel')
       .then(res => res.json())
       .then(data => {
-        if (data && data.prizes && data.prizes.length > 0) {
-          setWheelData(data.prizes.map(item => ({ option: item.prize_label })));
+        // Ensure data.prizes is an array before using .slice
+        const prizesArray = Array.isArray(data && data.prizes) ? data.prizes : [];
+        if (prizesArray.length > 0) {
+          setWheelData(prizesArray.map(item => ({ option: item.prize_label })));
           setBackgroundColors([
             "#f7931e", "#ffb84d", "#ffe066", "#fff799", "#d9f99d",
             "#a7e9f9", "#5dade2", "#b39ddb", "#f8bbd0", "#f06292"
-          ].slice(0, data.prizes.length));
+          ].slice(0, prizesArray.length));
           setConfigVersion(data.configVersion);
           // Check if user already spun for this config
           const lastSpinConfigVersion = localStorage.getItem('lastSpinConfigVersion');
@@ -165,7 +170,7 @@ function HomeCards() {
       ))}
 
       {/* Wheel Modal */}
-      {showWheel && (
+      {showWheel && Array.isArray(wheelData) && wheelData.length > 0 && Array.isArray(backgroundColors) && backgroundColors.length > 0 && (
         <div
           style={{
             position: "fixed",
@@ -209,8 +214,8 @@ function HomeCards() {
                 <Wheel
                   mustStartSpinning={mustSpin}
                   prizeNumber={prizeNumber}
-                  data={wheelData}
-                  backgroundColors={backgroundColors}
+                  data={Array.isArray(wheelData) ? wheelData : []}
+                  backgroundColors={Array.isArray(backgroundColors) ? backgroundColors : []}
                   textColors={["#333"]}
                   fontSize={12}
                   width={wheelSize}
