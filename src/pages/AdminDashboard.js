@@ -47,7 +47,7 @@ function AdminDashboard() {
       .then(res => res.json())
       .then(() => {
         setVouchers(vouchers =>
-          vouchers.map(v => v.id === id ? { ...v, status: newStatus } : v)
+          vouchers.map(v => v._id === id ? { ...v, status: newStatus } : v)
         );
       });
   };
@@ -258,11 +258,11 @@ function AdminDashboard() {
                     <>
                       <button
                         style={{ background: "#388e3c", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", marginRight: 6, cursor: "pointer" }}
-                        onClick={() => handleStatusChange(v.id, "Issued")}
+                        onClick={() => handleStatusChange(v._id, "Issued")}
                       >Issue</button>
                       <button
                         style={{ background: "#d32f2f", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer" }}
-                        onClick={() => handleStatusChange(v.id, "Void")}
+                        onClick={() => handleStatusChange(v._id, "Void")}
                       >Void</button>
                     </>
                   )}
