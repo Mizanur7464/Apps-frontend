@@ -338,7 +338,7 @@ function AdminDashboard() {
           </thead>
           <tbody>
             {voucherCampaigns.map(vc => (
-          <tr key={vc._id}>
+    <tr key={vc._id}>
                 <td>{vc._id}</td>
                 <td>{vc.content}</td>
                 <td>{vc.quantity}</td>
@@ -359,39 +359,66 @@ function AdminDashboard() {
       {/* Spin Wheel Config */}
       <section style={{ marginBottom: 40 }}>
         <h2>Spin Wheel Config</h2>
-        <form onSubmit={handleSpinSubmit} style={{ marginBottom: 16 }}>
-          {spinForm.map((prize, idx) => (
-            <div key={idx} style={{ marginBottom: 8 }}>
-              <input
-                type="text"
-                placeholder={`Prize #${idx + 1}`}
-                value={prize.prize_label}
-                onChange={e => handleSpinFormChange(idx, 'prize_label', e.target.value)}
-                required
-                style={{ marginRight: 8 }}
-              />
-              <input
-                type="number"
-                min={0}
-                max={100}
-                placeholder="Win %"
-                value={prize.win_chance}
-                onChange={e => handleSpinFormChange(idx, 'win_chance', e.target.value)}
-                required
-                style={{ marginRight: 8, width: 80 }}
-              />
-              {spinForm.length > 1 && (
-                <button type="button" onClick={() => removeSpinPrize(idx)} style={{ marginRight: 8 }}>Remove</button>
-              )}
-            </div>
-          ))}
-          <button type="button" onClick={addSpinPrize} disabled={spinForm.length >= 10} style={{ marginRight: 8 }}>+ Add Prize</button>
-          <button type="submit">Save Spin Config</button>
+        <form onSubmit={handleSpinSubmit} style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            {spinForm.map((prize, idx) => (
+              <div key={idx} style={{ marginBottom: 8 }}>
+                <input
+                  type="text"
+                  placeholder={`Prize #${idx + 1}`}
+                  value={prize.prize_label}
+                  onChange={e => handleSpinFormChange(idx, 'prize_label', e.target.value)}
+                  required
+                  style={{ marginRight: 8 }}
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  placeholder="Win %"
+                  value={prize.win_chance}
+                  onChange={e => handleSpinFormChange(idx, 'win_chance', e.target.value)}
+                  required
+                  style={{ marginRight: 8, width: 80 }}
+                />
+                {spinForm.length > 1 && (
+                  <button type="button" onClick={() => removeSpinPrize(idx)} style={{ marginRight: 8 }}>Remove</button>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={addSpinPrize} disabled={spinForm.length >= 10} style={{ marginRight: 8 }}>+ Add Prize</button>
+            <button type="submit">Save Spin Config</button>
+          </div>
+          {/* Start/Stop buttons side by side */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginLeft: '20px' }}>
+            <select
+              value={activeSpinConfigId || ''}
+              onChange={e => setActiveSpinConfigId(e.target.value)}
+              style={{ marginRight: 8 }}
+            >
+              <option value="">Select Config</option>
+              {spinConfigs.map(sc => (
+                <option key={sc._id} value={sc._id}>{sc.prize_label || sc._id}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => handleStartSpinConfig(activeSpinConfigId)}
+              disabled={!activeSpinConfigId}
+              style={{ background: '#388e3c', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', fontWeight: 600, cursor: !activeSpinConfigId ? 'not-allowed' : 'pointer' }}
+            >Start</button>
+            <button
+              type="button"
+              onClick={handleStopSpinConfig}
+              disabled={!activeSpinConfigId}
+              style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', fontWeight: 600, cursor: !activeSpinConfigId ? 'not-allowed' : 'pointer' }}
+            >Stop</button>
+          </div>
         </form>
         <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa' }}>
           <thead>
             <tr>
-              <th>ID</th><th>Prize</th><th>Win %</th><th>Campaign</th><th>Status</th><th>Created</th><th>Action</th>
+              <th>ID</th><th>Prize</th><th>Win %</th><th>Campaign</th><th>Status</th><th>Created</th>
             </tr>
           </thead>
           <tbody>
@@ -403,19 +430,6 @@ function AdminDashboard() {
                 <td>{sc.campaign_id}</td>
                 <td style={{ fontWeight: 600, color: sc.status === 'active' ? '#388e3c' : '#d32f2f' }}>{sc.status || 'active'}</td>
                 <td>{sc.created_at}</td>
-                <td>
-                  {activeSpinConfigId === (sc._id || sc.id) ? (
-                    <button
-                      style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}
-                      onClick={handleStopSpinConfig}
-                    >Stop</button>
-                  ) : (
-                    <button
-                      style={{ background: '#388e3c', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}
-                      onClick={() => handleStartSpinConfig(sc._id || sc.id)}
-                    >Start</button>
-                  )}
-                </td>
               </tr>
             ))}
           </tbody>
