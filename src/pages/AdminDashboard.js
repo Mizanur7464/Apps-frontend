@@ -199,11 +199,11 @@ function AdminDashboard() {
     fetch(`${apiUrl}/api/admin/referrals`).then(r => r.json()).then(setReferrals);
   };
 
-  const handleStartSpinConfig = (id) => {
-    fetch(`${apiUrl}/api/admin/spin-wheel/${id}/start`, { method: 'POST' })
+  const handleStartSpinConfig = () => {
+    fetch(`${apiUrl}/api/admin/spin-wheel/start`, { method: 'POST' })
       .then(r => r.json())
       .then(() => {
-        setActiveSpinConfigId(id);
+        setActiveSpinConfigId(null);
       });
   };
   const handleStopSpinConfig = () => {
@@ -359,62 +359,52 @@ function AdminDashboard() {
       {/* Spin Wheel Config */}
       <section style={{ marginBottom: 40 }}>
         <h2>Spin Wheel Config</h2>
-        <form onSubmit={handleSpinSubmit} style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ flex: 1 }}>
-            {spinForm.map((prize, idx) => (
-              <div key={idx} style={{ marginBottom: 8 }}>
-                <input
-                  type="text"
-                  placeholder={`Prize #${idx + 1}`}
-                  value={prize.prize_label}
-                  onChange={e => handleSpinFormChange(idx, 'prize_label', e.target.value)}
-                  required
-                  style={{ marginRight: 8 }}
-                />
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  placeholder="Win %"
-                  value={prize.win_chance}
-                  onChange={e => handleSpinFormChange(idx, 'win_chance', e.target.value)}
-                  required
-                  style={{ marginRight: 8, width: 80 }}
-                />
-                {spinForm.length > 1 && (
-                  <button type="button" onClick={() => removeSpinPrize(idx)} style={{ marginRight: 8 }}>Remove</button>
-                )}
-              </div>
-            ))}
-            <button type="button" onClick={addSpinPrize} disabled={spinForm.length >= 10} style={{ marginRight: 8 }}>+ Add Prize</button>
-            <button type="submit">Save Spin Config</button>
-          </div>
-          {/* Start/Stop buttons side by side */}
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginLeft: '20px' }}>
-            <select
-              value={activeSpinConfigId || ''}
-              onChange={e => setActiveSpinConfigId(e.target.value)}
-              style={{ marginRight: 8 }}
-            >
-              <option value="">Select Config</option>
-              {spinConfigs.map(sc => (
-                <option key={sc._id} value={sc._id}>{sc.prize_label || sc._id}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => handleStartSpinConfig(activeSpinConfigId)}
-              disabled={!activeSpinConfigId}
-              style={{ background: '#388e3c', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', fontWeight: 600, cursor: !activeSpinConfigId ? 'not-allowed' : 'pointer' }}
-            >Start</button>
-            <button
-              type="button"
-              onClick={handleStopSpinConfig}
-              disabled={!activeSpinConfigId}
-              style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', fontWeight: 600, cursor: !activeSpinConfigId ? 'not-allowed' : 'pointer' }}
-            >Stop</button>
-          </div>
+        <form onSubmit={handleSpinSubmit} style={{ marginBottom: 16 }}>
+          {spinForm.map((prize, idx) => (
+            <div key={idx} style={{ marginBottom: 8 }}>
+              <input
+                type="text"
+                placeholder={`Prize #${idx + 1}`}
+                value={prize.prize_label}
+                onChange={e => handleSpinFormChange(idx, 'prize_label', e.target.value)}
+                required
+                style={{ marginRight: 8 }}
+              />
+              <input
+                type="number"
+                min={0}
+                max={100}
+                placeholder="Win %"
+                value={prize.win_chance}
+                onChange={e => handleSpinFormChange(idx, 'win_chance', e.target.value)}
+                required
+                style={{ marginRight: 8, width: 80 }}
+              />
+              {spinForm.length > 1 && (
+                <button type="button" onClick={() => removeSpinPrize(idx)} style={{ marginRight: 8 }}>Remove</button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={addSpinPrize} disabled={spinForm.length >= 10} style={{ marginRight: 8 }}>+ Add Prize</button>
+          <button type="submit">Save Spin Config</button>
         </form>
+        {/* Start/Stop buttons side by side, no dropdown */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          <button
+            onClick={handleStartSpinConfig}
+            disabled={spinConfigs.length === 0 || spinConfigs.every(sc => sc.status === 'active')}
+            style={{ background: '#388e3c', color: '#fff', borderRadius: 6, padding: '6px 16px', fontWeight: 600 }}
+          >
+            Start
+          </button>
+          <button
+            onClick={handleStopSpinConfig}
+            disabled={spinConfigs.length === 0 || spinConfigs.every(sc => sc.status !== 'active')}
+            style={{ background: '#d32f2f', color: '#fff', borderRadius: 6, padding: '6px 16px', fontWeight: 600 }}
+          >
+            Stop
+          </button>
+        </div>
         <table border="1" cellPadding="6" style={{ width: '100%', background: '#fafafa' }}>
           <thead>
             <tr>
@@ -423,7 +413,7 @@ function AdminDashboard() {
           </thead>
           <tbody>
             {spinConfigs.map(sc => (
-              <tr key={sc._id} style={activeSpinConfigId === (sc._id || sc.id) ? { background: '#e0ffe0' } : {}}>
+              <tr key={sc._id} style={sc.status === 'active' ? { background: '#e0ffe0' } : {}}>
                 <td>{sc._id}</td>
                 <td>{sc.prize_label}</td>
                 <td>{sc.win_chance}</td>
