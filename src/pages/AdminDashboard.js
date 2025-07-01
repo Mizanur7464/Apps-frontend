@@ -206,16 +206,19 @@ function AdminDashboard() {
         .then(r => r.json())
         .then(data => {
           alert(data.message || "Spin is now started. Admin rewards are active.");
-          // Reload spin configs
+          // Always reload spin configs from correct response
           fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
-            if (Array.isArray(data)) {
-              setSpinConfigs(data);
-            } else if (data && Array.isArray(data.prizes)) {
+            if (data && Array.isArray(data.prizes)) {
               setSpinConfigs(data.prizes);
+            } else if (Array.isArray(data)) {
+              setSpinConfigs(data);
             } else {
               setSpinConfigs([]);
             }
           });
+        })
+        .catch(err => {
+          alert("Failed to start spin: " + err.message);
         });
     }
   };
@@ -226,16 +229,19 @@ function AdminDashboard() {
         .then(r => r.json())
         .then(data => {
           alert(data.message || "Spin is now stopped. Default rewards will be shown.");
-          // Reload spin configs
+          // Always reload spin configs from correct response
           fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
-            if (Array.isArray(data)) {
-              setSpinConfigs(data);
-            } else if (data && Array.isArray(data.prizes)) {
+            if (data && Array.isArray(data.prizes)) {
               setSpinConfigs(data.prizes);
+            } else if (Array.isArray(data)) {
+              setSpinConfigs(data);
             } else {
               setSpinConfigs([]);
             }
           });
+        })
+        .catch(err => {
+          alert("Failed to stop spin: " + err.message);
         });
     }
   };
