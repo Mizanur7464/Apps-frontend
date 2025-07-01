@@ -73,11 +73,11 @@ function GrabVoucher() {
   useEffect(() => {
     if (campaigns.length > 0) {
       Promise.all(campaigns.map(c =>
-        fetch(`${apiUrl}/api/vouchers/count?campaignId=${c.id}`).then(res => res.json())
+        fetch(`${apiUrl}/api/vouchers/count?campaignId=${c._id}`).then(res => res.json())
       )).then(results => {
         const claims = {};
         campaigns.forEach((c, i) => {
-          claims[c.id] = results[i].count;
+          claims[c._id] = results[i].count;
         });
         setCampaignClaims(claims);
       });
@@ -148,7 +148,7 @@ function GrabVoucher() {
           setShowModal(false);
           setSelectedVoucher(null);
           setError("");
-          addClaimedVoucherKey('campaign-' + campaign.id);
+          addClaimedVoucherKey('campaign-' + campaign._id);
           setClaimedKeys(getClaimedVoucherKeys());
         })
         .catch(err => {
@@ -222,11 +222,11 @@ function GrabVoucher() {
       <h2 style={{ fontWeight: 700, marginBottom: 20, fontSize: 18 }}>Grab Voucher</h2>
       {/* Show campaign vouchers as cards */}
       {campaigns.map(campaign => {
-        const claimed = claimedKeys.includes('campaign-' + campaign.id);
-        const claimedCount = campaignClaims[campaign.id] || 0;
+        const claimed = claimedKeys.includes('campaign-' + campaign._id);
+        const claimedCount = campaignClaims[campaign._id] || 0;
         const outOfStock = claimedCount >= campaign.quantity;
         return (
-          <div key={"campaign-"+campaign.id} style={{
+          <div key={"campaign-"+campaign._id} style={{
             background: "#2db7f5",
             color: "#fff",
             borderRadius: 10,
