@@ -216,6 +216,9 @@ function AdminDashboard() {
               setSpinConfigs([]);
             }
           });
+          // --- NEW: Broadcast to all tabs to clear lastSpinConfigVersion ---
+          localStorage.removeItem('lastSpinConfigVersion');
+          window.dispatchEvent(new Event('storage'));
         })
         .catch(err => {
           alert("Failed to start spin: " + err.message);
