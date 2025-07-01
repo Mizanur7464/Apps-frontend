@@ -231,13 +231,17 @@ function AdminDashboard() {
           alert(data.message || "Spin is now stopped. Default rewards will be shown.");
           // Always reload spin configs from correct response
           fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
+            let configs = [];
             if (data && Array.isArray(data.prizes)) {
-              setSpinConfigs(data.prizes);
+              configs = data.prizes;
             } else if (Array.isArray(data)) {
-              setSpinConfigs(data);
-            } else {
-              setSpinConfigs([]);
+              configs = data;
             }
+            // Force all to inactive if not already
+            if (configs.length && configs.some(sc => sc.status === 'active')) {
+              configs = configs.map(sc => ({ ...sc, status: 'inactive' }));
+            }
+            setSpinConfigs(configs);
           });
         })
         .catch(err => {
@@ -563,15 +567,15 @@ function AdminDashboard() {
         </thead>
         <tbody>
           {referralRewards.map(rw => (
-            <tr key={rw.id}>
-              <td>{rw.id}</td>
+            <tr key={rw._id}>
+              <td>{rw._id}</td>
               <td>{rw.content}</td>
               <td>{rw.status}</td>
               <td>{rw.created_at}</td>
               <td>
                 <button
                   style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
-                  onClick={() => handleDeleteReferralReward(rw.id)}
+                  onClick={() => handleDeleteReferralReward(rw._id)}
                 >Delete</button>
               </td>
             </tr>
