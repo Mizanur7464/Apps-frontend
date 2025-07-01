@@ -313,8 +313,8 @@ function AdminDashboard() {
           </thead>
           <tbody>
             {voucherCampaigns.map(vc => (
-              <tr key={vc.id}>
-                <td>{vc.id}</td>
+              <tr key={vc._id}>
+                <td>{vc._id}</td>
                 <td>{vc.content}</td>
                 <td>{vc.quantity}</td>
                 <td>{vc.status}</td>
@@ -322,7 +322,7 @@ function AdminDashboard() {
                 <td>
                   <button
                     style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
-                    onClick={() => handleDeleteCampaign(vc.id)}
+                    onClick={() => handleDeleteCampaign(vc._id)}
                   >Delete</button>
                 </td>
               </tr>
