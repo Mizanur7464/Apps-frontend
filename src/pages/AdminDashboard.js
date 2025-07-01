@@ -199,19 +199,45 @@ function AdminDashboard() {
     fetch(`${apiUrl}/api/admin/referrals`).then(r => r.json()).then(setReferrals);
   };
 
+  // Start Spin Config with confirmation
   const handleStartSpinConfig = () => {
-    fetch(`${apiUrl}/api/admin/spin-wheel/start`, { method: 'POST' })
-      .then(r => r.json())
-      .then(() => {
-        setActiveSpinConfigId(null);
-      });
+    if (window.confirm("Are you sure you want to start the spin?")) {
+      fetch(`${apiUrl}/api/admin/spin-wheel/start`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          alert(data.message || "Spin is now started. Admin rewards are active.");
+          // Reload spin configs
+          fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
+            if (Array.isArray(data)) {
+              setSpinConfigs(data);
+            } else if (data && Array.isArray(data.prizes)) {
+              setSpinConfigs(data.prizes);
+            } else {
+              setSpinConfigs([]);
+            }
+          });
+        });
+    }
   };
+  // Stop Spin Config with confirmation
   const handleStopSpinConfig = () => {
-    fetch(`${apiUrl}/api/admin/spin-wheel/stop`, { method: 'POST' })
-      .then(r => r.json())
-      .then(() => {
-        setActiveSpinConfigId(null);
-      });
+    if (window.confirm("Are you sure you want to stop the spin?")) {
+      fetch(`${apiUrl}/api/admin/spin-wheel/stop`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          alert(data.message || "Spin is now stopped. Default rewards will be shown.");
+          // Reload spin configs
+          fetch(`${apiUrl}/api/admin/spin-wheel`).then(r => r.json()).then(data => {
+            if (Array.isArray(data)) {
+              setSpinConfigs(data);
+            } else if (data && Array.isArray(data.prizes)) {
+              setSpinConfigs(data.prizes);
+            } else {
+              setSpinConfigs([]);
+            }
+          });
+        });
+    }
   };
 
   return (
@@ -413,7 +439,11 @@ function AdminDashboard() {
           </thead>
           <tbody>
             {spinConfigs.map(sc => (
-              <tr key={sc._id} style={sc.status === 'active' ? { background: '#e0ffe0' } : {}}>
+              <tr key={sc._id} style={
+                sc.status === 'active'
+                  ? { background: '#e0ffe0' }
+                  : { background: '#ffe0e0' }
+              }>
                 <td>{sc._id}</td>
                 <td>{sc.prize_label}</td>
                 <td>{sc.win_chance}</td>
