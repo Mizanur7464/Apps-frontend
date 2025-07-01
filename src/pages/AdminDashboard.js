@@ -20,6 +20,9 @@ function AdminDashboard() {
   // Referral Admin Features
   const [referrals, setReferrals] = useState([]);
 
+  // New state for active spin config
+  const [activeSpinConfigId, setActiveSpinConfigId] = useState(null);
+
   useEffect(() => {
     fetch(`${apiUrl}/api/admin/vouchers`)
       .then(res => res.json())
@@ -36,6 +39,13 @@ function AdminDashboard() {
     });
     fetch(`${apiUrl}/api/admin/referrals`).then(r => r.json()).then(setReferrals);
     fetch(`${apiUrl}/api/admin/referral-reward`).then(r => r.json()).then(setReferralRewards);
+    fetch(`${apiUrl}/api/spin-wheel/active`).then(r => r.json()).then(data => {
+      if (data && data.activeSpinConfigId) {
+        setActiveSpinConfigId(data.activeSpinConfigId);
+      } else {
+        setActiveSpinConfigId(null);
+      }
+    });
   }, []);
 
   const handleStatusChange = (id, newStatus) => {
@@ -189,6 +199,21 @@ function AdminDashboard() {
     fetch(`${apiUrl}/api/admin/referrals`).then(r => r.json()).then(setReferrals);
   };
 
+  const handleStartSpinConfig = (id) => {
+    fetch(`${apiUrl}/api/admin/spin-wheel/${id}/start`, { method: 'POST' })
+      .then(r => r.json())
+      .then(() => {
+        setActiveSpinConfigId(id);
+      });
+  };
+  const handleStopSpinConfig = () => {
+    fetch(`${apiUrl}/api/admin/spin-wheel/stop`, { method: 'POST' })
+      .then(r => r.json())
+      .then(() => {
+        setActiveSpinConfigId(null);
+      });
+  };
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 30 }}>
       <h2 style={{ fontWeight: 700, marginBottom: 20 }}>Admin Dashboard</h2>
@@ -313,7 +338,7 @@ function AdminDashboard() {
           </thead>
           <tbody>
             {voucherCampaigns.map(vc => (
-              <tr key={vc._id}>
+          <tr key={vc._id}>
                 <td>{vc._id}</td>
                 <td>{vc.content}</td>
                 <td>{vc.quantity}</td>
@@ -371,28 +396,25 @@ function AdminDashboard() {
           </thead>
           <tbody>
             {spinConfigs.map(sc => (
-              <tr key={sc.id}>
-                <td>{sc.id}</td>
+              <tr key={sc._id} style={activeSpinConfigId === (sc._id || sc.id) ? { background: '#e0ffe0' } : {}}>
+                <td>{sc._id}</td>
                 <td>{sc.prize_label}</td>
                 <td>{sc.win_chance}</td>
                 <td>{sc.campaign_id}</td>
                 <td style={{ fontWeight: 600, color: sc.status === 'active' ? '#388e3c' : '#d32f2f' }}>{sc.status || 'active'}</td>
                 <td>{sc.created_at}</td>
                 <td>
-                  <button
-                    style={{
-                      background: sc.status === 'active' ? '#d32f2f' : '#388e3c',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      padding: '6px 12px',
-                      cursor: 'pointer',
-                      fontWeight: 600
-                    }}
-                    onClick={() => handleSpinStatusChange(sc.id, sc.status || 'active')}
-                  >
-                    {sc.status === 'active' ? 'Deactivate' : 'Activate'}
-                  </button>
+                  {activeSpinConfigId === (sc._id || sc.id) ? (
+                    <button
+                      style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}
+                      onClick={handleStopSpinConfig}
+                    >Stop</button>
+                  ) : (
+                    <button
+                      style={{ background: '#388e3c', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}
+                      onClick={() => handleStartSpinConfig(sc._id || sc.id)}
+                    >Start</button>
+                  )}
                 </td>
               </tr>
             ))}
